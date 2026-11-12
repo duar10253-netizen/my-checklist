@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Checklist reutilizable</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color-scheme:light;--line:#d7dee7;--blue:#1366d6}
+*{box-sizing:border-box}body{margin:0;background:#f2f5f9;color:#152238;padding:20px}
+main{max-width:760px;margin:auto;background:white;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 5px 18px #15223812}
+h1{font-size:1.5rem;margin:0 0 8px}.intro{color:#4e5c6c;margin:0 0 18px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+button{font:inherit;border:0;border-radius:10px;padding:12px 20px;background:var(--blue);color:white;font-weight:700;cursor:pointer;min-height:45px}button:focus-visible,select:focus-visible{outline:3px solid #80b7ff;outline-offset:2px}
+table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid var(--line);padding:12px 10px;text-align:left}th{background:#eaf1fb}th:first-child{width:48px;text-align:center}td:first-child{text-align:center;color:#526178}th:last-child{width:110px;text-align:center}td:last-child{text-align:center}
+select{font-size:1.12rem;width:100%;min-height:43px;border:1px solid #aab8c9;border-radius:8px;background:white;text-align:center;color:#152238}select[data-state="ok"]{background:#e5f7ea;color:#176339}select[data-state="no"]{background:#fdeaea;color:#9c2323}.foot{margin:16px 0 0;color:#506074;font-size:.92rem}
+@media(max-width:480px){body{padding:8px}main{padding:13px;border-radius:12px}th,td{padding:8px 6px}th:last-child{width:90px}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>Mi checklist</h1><p class="intro">Texto fijo · marcas editables</p></div><button type="button" id="clear">CLEAR ↺</button></header>
+<table aria-label="Checklist reutilizable"><thead><tr><th>#</th><th>Actividad (fija)</th><th>Marca</th></tr></thead><tbody id="rows"></tbody></table>
+<p class="foot" id="status" aria-live="polite"></p>
+<p class="foot">CLEAR reinicia solo las marcas. Los nombres de las actividades no pueden modificarse desde esta página.</p>
+</main>
+<script>
+'use strict';
+// Para cambiar las tareas permanentes, edita únicamente los textos de esta lista:
+const tasks = [
+  'Revisar condiciones iniciales',
+  'Confirmar tendencia',
+  'Validar CBIDX',
+  'Verificar RSI',
+  'Comprobar VWAP',
+  'Identificar divergencias',
+  'Revisar soportes y resistencias',
+  'Confirmar señal de entrada',
+  'Verificar gestión de riesgo',
+  'Evaluación final'
+];
+const storageKey = 'checklist-fija-v1';
+let marks;
+try {const saved=JSON.parse(localStorage.getItem(storageKey));marks=Array.isArray(saved)&&saved.length===tasks.length?saved.map(x=>['—','✓','X'].includes(x)?x:'—'):tasks.map(()=> '—');}
+catch(e){marks=tasks.map(()=> '—');}
+const tbody=document.getElementById('rows');
+const status=document.getElementById('status');
+function persist(){try{localStorage.setItem(storageKey,JSON.stringify(marks));}catch(e){}updateStatus();}
+function updateStatus(){status.textContent=`✓ ${marks.filter(x=>x==='✓').length}  ·  X ${marks.filter(x=>x==='X').length}  ·  — ${marks.filter(x=>x==='—').length}`;}
+const controls=[];
+tasks.forEach((task,i)=>{
+ const tr=document.createElement('tr');
+ const number=document.createElement('td');number.textContent=String(i+1);
+ const name=document.createElement('td');name.textContent=task;
+ const cell=document.createElement('td');
+ const sel=document.createElement('select');sel.setAttribute('aria-label',`Marca para ${task}`);
+ [['—','—'],['✓','✓'],['X','X']].forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;sel.appendChild(opt);});
+ sel.value=marks[i];sel.dataset.state=marks[i]==='✓'?'ok':marks[i]==='X'?'no':'blank';
+ sel.addEventListener('change',()=>{marks[i]=sel.value;sel.dataset.state=sel.value==='✓'?'ok':sel.value==='X'?'no':'blank';persist();});
+ cell.appendChild(sel);tr.append(number,name,cell);tbody.appendChild(tr);controls.push(sel);
+});
+document.getElementById('clear').addEventListener('click',()=>{
+ marks=tasks.map(()=> '—');controls.forEach(s=>{s.value='—';s.dataset.state='blank';});persist();
+});
+updateStatus();
+</script>
+</body>
+</html>
